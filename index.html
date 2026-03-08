@@ -60,28 +60,30 @@ animation:netflix 3s forwards;
 /* PAGES */
 
 .page{
-position:absolute;
+position:fixed;
 width:100%;
 height:100vh;
 top:0;
 left:100%;
-padding:28px 20px 118px;
+padding:40px 20px;
 box-sizing:border-box;
-transition:0.6s;
+transition:left 0.6s ease;
 display:flex;
 flex-direction:column;
 justify-content:center;
 align-items:center;
 gap:12px;
-overflow-y:auto;
+z-index:1;
 }
 
 .page.active{
 left:0;
+z-index:2;
 }
 
 .page.prev{
 left:-100%;
+z-index:0;
 }
 
 .page p,
@@ -427,18 +429,18 @@ to{transform:scale(1) rotate(-2deg);opacity:1;}
 
 @media (max-width:768px){
 body{
-overflow:auto;
+overflow:hidden;
 }
 
 .page{
 height:100dvh;
-padding:18px 14px 112px;
+padding:20px 16px 100px;
 display:flex;
 flex-direction:column;
 justify-content:center;
 align-items:center;
 gap:10px;
-overflow-y:auto;
+overflow:hidden;
 }
 
 .page h1{
@@ -675,8 +677,9 @@ font-size:18px;
 
 <div class="music" onclick="toggleMusic()" aria-label="Toggle music" title="Play music">🎵</div>
 
-<audio id="song" loop preload="auto">
-<source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8a4b1e0f0.mp3">
+<audio id="song" loop preload="metadata">
+<source src="music.mp3" type="audio/mpeg">
+Your browser does not support the audio element.
 </audio>
 
 <script>
@@ -876,12 +879,23 @@ for(let i=0;i<120;i++) createHeart();
 function toggleMusic(){
 if(!music) return;
 
+try{
 if(music.paused){
-music.play().catch(()=>{});
+let playPromise=music.play();
+if(playPromise!==undefined){
+playPromise.catch(error=>{
+console.log("Play failed:",error);
+music.volume=0.5;
+});
+}else{
+music.volume=0.5;
+}
 }else{
 music.pause();
 }
-
+}catch(e){
+console.log("Audio error:",e);
+}
 }
 
 function updateMusicButton(){
@@ -899,12 +913,18 @@ if(music){
 music.volume=0.5;
 music.addEventListener("play",updateMusicButton);
 music.addEventListener("pause",updateMusicButton);
+music.addEventListener("error",(e)=>{console.log("Audio error event:",e);});
 }
 
 // Mobile browsers usually block autoplay until first user interaction.
 function startMusicOnFirstInteraction(){
 if(!music || !music.paused) return;
-music.play().catch(()=>{});
+let playPromise=music.play();
+if(playPromise!==undefined){
+playPromise.catch(error=>{
+console.log("Auto-play blocked (expected):",error);
+});
+}
 document.removeEventListener("click",startMusicOnFirstInteraction);
 document.removeEventListener("touchstart",startMusicOnFirstInteraction);
 document.removeEventListener("keydown",startMusicOnFirstInteraction);
